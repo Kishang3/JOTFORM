@@ -1,30 +1,31 @@
 (config
+(text-field
+:name "subDomain"
+:label "Domain name"
+:placeholder "Sub-domain name" )
+
 (password-field
 :name "apiKey"
 :label "Enter API key"
 :placeholder "API keys goes here"
 :required true))
 
-(default-source (http/get :base-url " https://api.jotform.com"
+(default-source (http/get :base-url " https://{subDomain}"
 (header-params "Content-Type" "application/json"))
 (paging/no-pagination)
 (auth/apikey-custom-header :headerName "apikey")
 (error-handler
-(when :status 404 :message "not found" :action fail)
-(when :status 404 :action skip)
-(when :status 429 :action rate-limit)
-(when :status 401 :action refresh)
-(when :status 503 :action retry))
-)
+(when :status 200 :message "Sucess")
+))
 
-(entity SUBMISSIONS
+(entity USERS
  (api-docs-url "https://api.jotform.com/docs/#user")
- (source (http/get :url "user?apiKey={apiKey}")
+ (source (http/get :url "/user")
    (extract-path "content"))
    (fields
-        usernam
+        username  :id
         name
-        email
+        email      
         website
         time_zone
         account_type
@@ -41,49 +42,28 @@
         doNotClone
         folderLayout
         language
-        avatarUr
-   ))
-
-
-
-
-
-
-
-
-
-
-
+        avatarUr))
 
  (entity SUBMISSIONS
  (api-docs-url "https://api.jotform.com/docs/#user-submissions")
- (source (http/get :url "/user/submissions?apiKey={apiKey}")
+ (source (http/get :url "/user/submissions")
    (extract-path "content")
-
-  (paging/page-number
-        :offset-query-param-initial-value  0,
-        offset-query-param-name  "offset", 
-        limit  30 ,
-        limit-query-param-name "limit"
-  
-  )
- )
-
+   (paging/page-number
+        :offset-query-param-initial-value  0
+        offset-query-param-name  "offset"
+        limit  1000 
+        limit-query-param-name "limit"))
  (sync-plan
           (change-capture-cursor
             (query-params "orderby" "desc")
-            (extract-path "content")
-           (subset/by-time (query-params "updatedat" "$FROM")
+           (subset/by-time (query-params "updatedate" "$FROM")
                            (format "yyyy-MM-dd'T'HH:mm:ssZ")
-                           (initial  "2023-01-01T00:00:00Z")
-                        )))
+                           (initial-value  "2023-01-01T00:00:00Z"))))
 (field
-    id
+    id     :id
     form_id
     ip
     created_at
     updated_at
     status
-    new
-
-    ))
+    new))
